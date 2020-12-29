@@ -27,7 +27,10 @@ class _PlayerState extends State<PlayerUI> {
   @override
   void initState() {
     super.initState();
-    initAudioPlayer();
+    Future<UrlToPlay> url = getUrl();
+    url.then((data) {
+      initAudioPlayer(data.url);
+    });
   }
 
   @override
@@ -36,10 +39,11 @@ class _PlayerState extends State<PlayerUI> {
     super.dispose();
   }
 
-  void initAudioPlayer() {
+  void initAudioPlayer(String url) {
     player = AudioPlayer();
     player.onAudioPositionChanged.listen((p) => setState(() => position = p));
     player.onDurationChanged.listen((s) => setState(() => duration = s));
+    play(url);
   }
 
   play(String url) async {
@@ -74,12 +78,81 @@ class _PlayerState extends State<PlayerUI> {
         title: Text('Song name goes here'),
       ),
       body: Container(
-        child: FutureBuilder<UrlToPlay>(
-          future: getUrl(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Container(
+              color: Colors.blueGrey,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  RoundIconButton(
+                    icon: Icons.replay_10,
+                    onPressed: () {
+                      player.seek(Duration(
+                          milliseconds: position.inMilliseconds - 10000));
+                    },
+                  ),
+                  Container(
+                    child: RaisedButton(
+                      child: Text(text),
+                      onPressed: () {
+                        setState(() {
+                          if (isPlaying) {
+                            pause();
+                            text = "Play";
+                            isPlaying = false;
+                          } else {
+                            resume();
+                            text = "Pause";
+                            isPlaying = true;
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  RoundIconButton(
+                    icon: Icons.forward_10,
+                    onPressed: () {
+                      player.seek(Duration(
+                          milliseconds: position.inMilliseconds + 10000));
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              color: Colors.blueGrey,
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  thumbColor: Colors.amber,
+                  activeTrackColor: Colors.blue,
+                  overlayColor: Color(0x29EB1555),
+                  // thumbShape:
+                  //     RoundSliderThumbShape(enabledThumbRadius: 15.0),
+                  // overlayShape:
+                  //     RoundSliderOverlayShape(overlayRadius: 30.0),
+                ),
+                child: Slider(
+                    value: position?.inMilliseconds?.toDouble() ?? 0.0,
+                    min: 0.0,
+                    max: duration?.inMilliseconds?.toDouble() ?? 100.0,
+                    onChanged: (double value) {
+                      setState(() {
+                        return player
+                            .seek(Duration(milliseconds: value.round()));
+                      });
+                    }),
+              ),
+            ),
+          ],
+        ),
+        /*child: FutureBuilder<UrlToPlay>(
+          //future: getUrl(),
           builder: (context, snapshot) {
             if (snapshot.hasData) {
-              final nurl = snapshot.data;
-              url = nurl.url;
+              // final nurl = snapshot.data;
+              // url = nurl.url;
               //print("++++++++++++++++++++++++++++++++++++++++++++++++ " + nurl.url);
 
               //
@@ -167,7 +240,7 @@ class _PlayerState extends State<PlayerUI> {
             }
             return CircularProgressIndicator();
           },
-        ),
+        ),*/
       ),
     );
   }
